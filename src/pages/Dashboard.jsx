@@ -13,7 +13,6 @@ const Dashboard = () => {
 
   const API_URL = "https://chatboot-bqad.onrender.com/webhook/leads";
 
-  // Cargar datos reales desde el Backend
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -24,9 +23,15 @@ const Dashboard = () => {
         }
 
         const data = await response.json();
-        setLeads(data);
+
+        // 🔥 Ordenar por fecha (más recientes primero)
+        const sorted = data.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+
+        setLeads(sorted);
       } catch (error) {
-        console.error("Error cargando leads desde el servidor:", error);
+        console.error("Error cargando leads:", error);
       } finally {
         setLoading(false);
       }
@@ -55,12 +60,12 @@ const Dashboard = () => {
             {loading ? (
               <p style={{ color: "#fff" }}>Cargando clientes...</p>
             ) : leads.length === 0 ? (
-              <p style={{ color: "#aaa" }}>No hay clientes registrados aún.</p>
+              <p style={{ color: "#aaa" }}>
+                No hay clientes registrados aún.
+              </p>
             ) : (
               leads.map((lead, index) => (
                 <LeadRow
-                  // ✅ Solución al error de función impura:
-                  // Usamos el _id de Mongo o el index como respaldo estable
                   key={lead._id || index}
                   lead={lead}
                   onSelect={setSelected}
@@ -71,7 +76,10 @@ const Dashboard = () => {
         )}
 
         {selected && (
-          <Seguimiento lead={selected} goBack={() => setSelected(null)} />
+          <Seguimiento
+            lead={selected}
+            goBack={() => setSelected(null)}
+          />
         )}
 
         {view === "stats" && <Estadisticas leads={leads} />}
