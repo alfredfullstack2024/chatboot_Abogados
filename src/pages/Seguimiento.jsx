@@ -1,12 +1,14 @@
-// src/pages/Seguimiento.jsx
-
 import { useState } from "react";
 
 const Seguimiento = ({ lead, goBack }) => {
   const [note, setNote] = useState("");
-  const [notes, setNotes] = useState(lead.notes || []);
 
-  const handleAddNote = () => {
+  // 🔥 aseguramos orden correcto
+  const [notes, setNotes] = useState(
+    (lead.notes || []).slice().reverse()
+  );
+
+  const handleAddNote = async () => {
     if (!note.trim()) return;
 
     const newNote = {
@@ -14,8 +16,31 @@ const Seguimiento = ({ lead, goBack }) => {
       date: new Date().toLocaleString(),
     };
 
-    setNotes([newNote, ...notes]);
-    setNote("");
+    try {
+      const res = await fetch(
+        `https://chatboot-bqad.onrender.com/webhook/leads/${lead._id}/note`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newNote),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Error guardando seguimiento");
+      }
+
+      const updatedLead = await res.json();
+
+      // 🔥 usamos datos reales de la BD
+      setNotes((updatedLead.notes || []).slice().reverse());
+
+      setNote("");
+    } catch (error) {
+      console.error("❌ Error:", error);
+    }
   };
 
   return (
@@ -28,27 +53,15 @@ const Seguimiento = ({ lead, goBack }) => {
 
       {/* INFO CLIENTE */}
       <div style={styles.card}>
-        <p>
-          <strong>👤 Nombre:</strong> {lead.name}
-        </p>
-        <p>
-          <strong>📞 Teléfono:</strong> {lead.phone}
-        </p>
-        <p>
-          <strong>⚖️ Área:</strong> {lead.area}
-        </p>
-        <p>
-          <strong>📂 Subárea:</strong> {lead.subarea}
-        </p>
-        <p>
-          <strong>💰 Valor:</strong> ${lead.amount}
-        </p>
-        <p>
-          <strong>📅 Fecha:</strong> {lead.date}
-        </p>
+        <p><strong>👤 Nombre:</strong> {lead.name}</p>
+        <p><strong>📞 Teléfono:</strong> {lead.phone}</p>
+        <p><strong>⚖️ Área:</strong> {lead.area}</p>
+        <p><strong>📂 Subárea:</strong> {lead.subarea}</p>
+        <p><strong>💰 Valor:</strong> ${lead.amount}</p>
+        <p><strong>📅 Fecha:</strong> {lead.date}</p>
       </div>
 
-      {/* 🔥 DESCRIPCIÓN DESTACADA */}
+      {/* DESCRIPCIÓN */}
       <div style={styles.descriptionBox}>
         <h3 style={{ marginBottom: "10px" }}>📝 Descripción del caso</h3>
         <p style={{ lineHeight: "1.5" }}>{lead.description}</p>
@@ -107,8 +120,6 @@ const styles = {
     borderRadius: "10px",
     marginBottom: "20px",
   },
-
-  // 🔥 AQUÍ VA EL NUEVO BLOQUE
   descriptionBox: {
     background: "#0f172a",
     padding: "15px",
@@ -116,7 +127,6 @@ const styles = {
     marginTop: "15px",
     borderLeft: "4px solid #3b82f6",
   },
-
   noteBox: {
     marginBottom: "20px",
   },
